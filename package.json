@@ -1,0 +1,18 @@
+{
+    "name": "aoc-typescript",
+    "version": "1.0.0",
+    "description": "Advent of Code solutions in Typescript",
+    "main": "index.js",
+    "scripts": {
+        "start": "npx ts-node 2024/day1.ts"
+    },
+    "dependencies": {
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.2"
+    },
+    "devDependencies": {
+        "@swc/core": "^1.9.3",
+        "@swc/helpers": "^0.5.15",
+        "regenerator-runtime": "^0.14.1"
+    }
+}
