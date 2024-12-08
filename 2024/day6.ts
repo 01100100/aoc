@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { off } from 'process';
 
 console.time('Total Execution');
 
@@ -9,7 +8,7 @@ const input: string = fs.readFileSync(input_path, 'utf-8');
 const lines: string[] = input.split('\n');
 
 const testData =
-`....#.....
+    `....#.....
 .........#
 ..........
 ..#.......
@@ -34,75 +33,145 @@ for (const line of lines) {
 
 
 console.log(`grid is ${grid.length} x ${grid[0].length}`);
-
 function traverse(grid: string[][]): string[][] {
-    // set the starting position to be the coordinates of the '^' character and the direction to be up
-    let directions: Record<string, number[]> = {
+    const directions: Record<string, number[]> = {
         "^": [-1, 0],
         "v": [1, 0],
         "<": [0, -1],
         ">": [0, 1],
     };
-    let rotate: Record<string, string> = {
+
+    const rotate: Record<string, string> = {
         "^": ">",
+        ">": "v",
         "v": "<",
         "<": "^",
-        ">": "v",
-    };
-    let direction = "^";
-    let position: Record<string, number> =
-    {
-        x: 0,
-        y: 0
     };
 
+    let direction: string = "^";
+    let position: { x: number, y: number } = { x: 0, y: 0 };
+
+    // Find starting position
     for (let i = 0; i < grid.length; i++) {
         for (let j = 0; j < grid[i].length; j++) {
             if (grid[i][j] === '^') {
-                position.x = i;
-                position.y = j;
+                position = { x: i, y: j };
+                break;
             }
         }
     }
-    // loop until the next position goes out of bounds
+
     while (true) {
-        if (position.x + directions[direction][0] < 0 || position.x + directions[direction][0] >= grid.length) {
+        const nextX = position.x + directions[direction][0];
+        const nextY = position.y + directions[direction][1];
+
+        // Check both x and y bounds
+        if (nextX < 0 || nextX >= grid.length || nextY < 0 || nextY >= grid[0].length) {
+            // Out of bounds so mark the current position and return the grid.
             grid[position.x][position.y] = 'X';
             return grid;
         }
-        let nextChar = grid[position.x + directions[direction][0]][position.y + directions[direction][1]];
+
+        const nextChar = grid[nextX][nextY];
+
+        if (nextChar === '#') {
+            // Hit a wall so rotate.
+            direction = rotate[direction];
+            continue;
+        }
+
         if (nextChar === '.' || nextChar === 'X') {
+            // Move forward and mark the path and the current position and direction.
             grid[position.x][position.y] = 'X';
-            position.x += directions[direction][0];
-            position.y += directions[direction][1];
+            position = { x: nextX, y: nextY };
             grid[position.x][position.y] = direction;
         }
+    }
+}
+
+function loopDetector(grid: string[][]): boolean {
+    const directions: Record<string, number[]> = {
+        "^": [-1, 0],
+        "v": [1, 0],
+        "<": [0, -1],
+        ">": [0, 1],
+    };
+
+    const rotate: Record<string, string> = {
+        "^": ">",
+        ">": "v",
+        "v": "<",
+        "<": "^",
+    };
+
+    let direction = "^";
+    let position = { x: 0, y: 0 };
+    const visited = new Set<string>();
+    const maxSteps = grid.length * grid[0].length * 4; // There are four directions we could possibly go over the entire grid so this is a very generous upper bound
+    let steps = 0;
+
+    // Find starting position
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            if (grid[i][j] === '^') {
+                position = { x: i, y: j };
+                break;
+            }
+        }
+    }
+
+    // Traverse the grid
+    while (steps < maxSteps) {
+        const nextX = position.x + directions[direction][0];
+        const nextY = position.y + directions[direction][1];
+        const state = `${position.x},${position.y},${direction}`;
+
+        if (nextX < 0 || nextX >= grid.length || nextY < 0 || nextY >= grid[0].length) {
+            // Out of bounds
+            return false;
+        }
+
+        if (visited.has(state)) {
+            // Loop entered
+            return true;
+        }
+
+        // record state including coordinates and direction
+        visited.add(state);
+
+        const nextChar = grid[nextX][nextY];
         if (nextChar === '#') {
-            // rotate 90 degrees clockwise
-            direction = rotate[direction] || "^";
+            // Hit a wall so rotate
+            direction = rotate[direction];
+        } else {
+            // Move forward
+            position = { x: nextX, y: nextY };
         }
-
+        steps++;
     }
+    return true;
 }
 
-const output = traverse(grid);
-// for (const line in output) {
-//     console.log(output[line].join(''));
-// }
-
-// count the number of X's in the grid
-let count = 0;
-for (let i = 0; i < output.length; i++) {
-    for (let j = 0; j < output[i].length; j++) {
-        if (output[i][j] === 'X') {
-            count++;
+function countLoops(grid: string[][]): number {
+    // Brute force over all possible grids with a single "#" added and count if a loop is detected.
+    let count = 0;
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            if (grid[i][j] === '.') {
+                const gridCopy = grid.map(row => [...row]);
+                gridCopy[i][j] = '#';
+                if (loopDetector(gridCopy)) {
+                    count++;
+                    console.log(`Loop detected adding "#" in (${i},${j}).`);
+                }
+            }
         }
     }
+    return count;
 }
 
-
-console.log("part 1 test answer = ", count);
-
+const output = traverse(structuredClone(grid));
+const part1Count = output.flat().filter(cell => cell === 'X').length; 
+console.log("Part 1:", part1Count);
+console.log("Part 2:", countLoops(grid));
 console.timeEnd('Total Execution');
-
-
