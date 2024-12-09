@@ -128,11 +128,13 @@ function loopDetector(grid: string[][]): boolean {
 
         if (nextX < 0 || nextX >= grid.length || nextY < 0 || nextY >= grid[0].length) {
             // Out of bounds
+            console.log(`Escape!`);
             return false;
         }
 
         if (visited.has(state)) {
             // Loop entered
+            console.log(`Loop detected!`);
             return true;
         }
 
@@ -149,6 +151,7 @@ function loopDetector(grid: string[][]): boolean {
         }
         steps++;
     }
+    console.log(`Max steps reached`);
     return true;
 }
 
@@ -162,7 +165,6 @@ function countLoops(grid: string[][]): number {
                 gridCopy[i][j] = '#';
                 if (loopDetector(gridCopy)) {
                     count++;
-                    console.log(`Loop detected adding "#" in (${i},${j}).`);
                 }
             }
         }
